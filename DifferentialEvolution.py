@@ -38,8 +38,8 @@ class DifferentialEvolution:
 
         current = population[current_idx]
         best = population[best_idx]
-
         mutant = current + mut * (best - current) + mut * (x1 - x2)
+
         return np.clip(mutant, 0, 1)
 
     @staticmethod
@@ -47,8 +47,7 @@ class DifferentialEvolution:
         popsize = len(population)
         idxs = [idx for idx in range(popsize) if idx != current_idx]
 
-        x1, x2, x3 = np.random.choice(idxs, size=3, replace=False)
-
+        x1, x2, x3 = population[np.random.choice(idxs, size=3, replace=False)]
         mutant = x1 + mut * (x2 - x3)
 
         return np.clip(mutant, 0, 1)
@@ -74,14 +73,10 @@ class DifferentialEvolution:
 
         for i in range(iterations):
             for j in range(popsize):
-                # Randomly select 3 vectors from the population
-                idxs = [idx for idx in range(popsize) if idx != j]
-                a, b, c = pop[np.random.choice(idxs, 3, replace=False)]
+                #mutant = self._rand_mutation(mut, j, pop)
+                mutant = self._current_to_best_mutation(mut, j, best_idx, pop)
 
-                # Calculate the mutation vector
-                mutant = np.clip(a + mut * (b-c), 0, 1)
 
-                # Determine the components where recombination occurs
                 cross_points = np.random.rand(dims) < crossp
 
                 if not np.any(cross_points):
@@ -132,7 +127,7 @@ class Testing:
         plt.contourf(x,y,z)
         plt.show()
 
-    def quadraticTest(self):
+    def quadraticTest(self, plot=False ):
         print("Starting test for the function f(x,y) = x^2 + y^2")
         print("="*50)
         f = lambda x: sum(i ** 2 for i in x)
@@ -141,11 +136,12 @@ class Testing:
         print(f"Minimum is at:\t\t\t {np.round(pt,decimals=6)}")
         print(f"Minimal value is:\t\t {np.round(value, decimals=6)}.")
         print("="*50)
-        self.plot_function(f)
-        self.plot_fitness(problem.fitness_history)
+        if plot:
+            self.plot_function(f)
+            self.plot_fitness(problem.fitness_history)
 
 
-    def ackleyTest(self):
+    def ackleyTest(self, plot=False):
         def ackley_function(x):
             x1, x2 = x
             #returns the point value of the given coordinate
@@ -159,11 +155,12 @@ class Testing:
         print("="*50)
         problem = DifferentialEvolution(ackley_function, self.limits)
         pt, value = problem.optimize(**self.params)
-        print(f"Minimum is at:\t\t {np.round(pt,decimals=6)}")
+        print(f"Minimum is at:\t\t\t {np.round(pt,decimals=6)}")
         print(f"Minimal value is:\t\t {np.round(value, decimals=6)}.")
         print("="*50)
-        self.plot_function(ackley_function)
-        self.plot_fitness(problem.fitness_history)
+        if plot:
+            self.plot_function(ackley_function)
+            self.plot_fitness(problem.fitness_history)
 
 
 
@@ -175,8 +172,8 @@ if __name__ == '__main__':
     limits = [(-5,5)]*2
 
     qtest = Testing(limits)
-    qtest.quadraticTest()
-    qtest.ackleyTest()
+    qtest.quadraticTest(plot=True)
+    qtest.ackleyTest(plot=True)
 
 
 
