@@ -2,7 +2,6 @@ import numpy as np
 cimport cython
 from cython.parallel cimport prange
 
-#cython: boundscheck=False, wraparound=False
 
 ctypedef fused floating:
     float
@@ -11,6 +10,8 @@ ctypedef fused floating:
 cdef floating clip(floating value) nogil:
     return min(max(value, 0), 1)
 
+@cython.boundscheck(False)
+@cython.wraparound(False)
 def current_to_best_mutation(floating[:] current, floating[:] best, floating[:] x1, floating[:] x2, floating mut):
 
     cdef Py_ssize_t x_max = current.shape[0]
@@ -24,6 +25,8 @@ def current_to_best_mutation(floating[:] current, floating[:] best, floating[:] 
 
     return np.array(result)
 
+@cython.boundscheck(False)
+@cython.wraparound(False)
 def rand_mutation(floating[:] x1, floating[:] x2, floating[:] x3, floating mut):
 
     cdef Py_ssize_t x_max = x1.shape[0]

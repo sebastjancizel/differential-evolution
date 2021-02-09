@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mutations import current_to_best_mutation, rand_mutation
 
+
 # TODO: Visualize the steps of Differential Evolution
 # TODO: Implement variants of the algorithm (have separate mutation and recombination methods in the class)
 
@@ -28,24 +29,45 @@ class DifferentialEvolution:
         return np.fromiter((self.f(ind) for ind in arr), float)
 
     @staticmethod
-    def _current_to_best_mutation(mut, current_idx, best_idx, population):
-        popsize = len(population)
-        idxs = [idx for idx in range(popsize) if idx != best_idx and idx != current_idx]
+    @profile
+    def _current_to_best_mutation(mut, current_idx, best_idx, population, popsize):
 
-        x1, x2 = population[np.random.choice(idxs, size=2, replace=False)]
+        idx1, idx2 = np.random.choice(popsize - 2, size=2, replace=False)
 
+        lo, hi = (current_idx, best_idx) if current_idx < best_idx else (best_idx, current_idx)
+
+        # This is a bijection from range(popsize - 2) to range(popsize)\{current, best}
+        idx1 = idx1 if idx1 < lo else idx1 + 2 if idx2 >= hi else idx1 + 1
+        idx2 = idx2 if idx2 < lo else idx2 + 2 if idx2 >= hi else idx2 + 1
+
+        x1 = population[idx1]
+        x2 = population[idx2]
         current = population[current_idx]
         best = population[best_idx]
+
         return current_to_best_mutation(current, best, x1, x2, mut)
 
+    # Replacing with above version reduces the running time by 50%!! The bottleneck is the np.random.choice function
+    # def _current_to_best_mutation(mut, current_idx, best_idx, population):
+    #     popsize = len(population)
+    #     idxs = np.fromiter((idx for idx in range(popsize) if idx != best_idx and idx != current_idx), int)
+
+    #     x1, x2 = population[np.random.choice(idxs, size=2, replace=False)]
+
+    #     current = population[current_idx]
+    #     best = population[best_idx]
+
+    #     result = current_to_best_mutation(current, best, x1, x2, mut)
+    #     return result
+
     @staticmethod
-    def _rand_mutation(mut, current_idx, best_idx, population):
-        popsize = len(population)
-        idxs = [idx for idx in range(popsize) if idx != current_idx]
+    def _rand_mutation(mut, current_idx, best_idx, population, popsize):
+        idxs = np.fromiter((idx for idx in range(popsize) if idx != current_idx), int)
 
         x1, x2, x3 = population[np.random.choice(idxs, size=3, replace=False)]
 
-        return rand_mutation(x1, x2, x3, mut)
+        result = rand_mutation(x1, x2, x3, mut)
+        return result
 
     def optimize(
         self,
@@ -96,7 +118,7 @@ class DifferentialEvolution:
         for i in range(iterations):
             for j in range(popsize):
                 # mutant = self._rand_mutation(mut, j, pop)
-                mutant = mutation_function(mut, j, best_idx, pop)
+                mutant = mutation_function(mut, j, best_idx, pop, popsize)
 
                 cross_points = np.random.rand(dims) < crossp
 
@@ -155,7 +177,9 @@ class Testing:
     def quadraticTest(self, plot=False):
         print("Starting test for the function f(x,y) = x^2 + y^2")
         print("=" * 50)
-        f = lambda x: sum(i ** 2 for i in x)
+        def f(x):
+            return np.sum(x ** 2)
+
         problem = DifferentialEvolution(f, self.limits)
         pt, value = problem.optimize(**self.params)
         print(f"Minimum is at:\t\t\t {np.round(pt,decimals=10)}")
@@ -188,8 +212,8 @@ class Testing:
 
 
 if __name__ == "__main__":
-    limits = [(-50, 50)] * 2
-
-    qtest = Testing(limits, popsize=100, iterations=100)
+    #Benchmark settings
+    limits = [(-50, 50)] * 25
+    qtest = Testing(limits, popsize=100, iterations=5000)
     qtest.quadraticTest(plot=False)
-    qtest.ackleyTest(plot=False)
+    # qtest.ackleyTest(plot=False)
